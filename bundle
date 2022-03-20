@@ -1,0 +1,5 @@
+deno bundle \
+    --config deno.jsonc \
+    --no-check \
+    "$@" \
+    client/index.ts public/js/index.js

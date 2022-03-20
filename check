@@ -1,0 +1,4 @@
+deno bundle \
+    --config deno.jsonc \
+    "$@" \
+    client/index.ts > /dev/null

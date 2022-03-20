@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.unstable", "dom"]
+  },
+  "importMap": "import_map.json",
+  "lint": {
+    "files": {
+      "exclude": ["public/*.js"]
+    }
+  },
+  "fmt": {
+    "files": { "exclude": ["public/*.js"] }
+  }
+}

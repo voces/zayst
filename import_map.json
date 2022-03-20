@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "react": "https://esm.sh/react@17.0.2?pin=70?path=",
+    "react/jsx-runtime": "https://esm.sh/react@17.0.2/jsx-runtime?pin=70",
+    "react-dom": "https://esm.sh/react-dom@17.0.2?pin=70?path=",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@7.0.26?pin=70",
+    "three": "https://esm.sh/three@0.138.3?pin=70",
+    "miniplex": "https://esm.sh/@voces/miniplex@0.7.3?pin=70&deps=react@17.0.2",
+    "miniplex/react": "https://esm.sh/@voces/miniplex@0.7.3/react?pin=70&deps=react@17.0.2",
+    "ecs-proxy-react": "https://deno.land/x/ecs_proxy@0.4.4/src/react.tsx?deps=react@17.0.2"
+  }
+}
