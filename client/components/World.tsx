@@ -1,7 +1,7 @@
 import React from "react";
 import { Canvas } from "@react-three/fiber";
 import { HexGrid } from "./HexGrid.tsx";
-import { AppContext, useApp } from "../ecs.ts";
+import { AppContext, useApp } from "../ecs/index.ts";
 
 export const World = () => {
   const app = useApp();

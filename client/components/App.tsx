@@ -1,17 +1,11 @@
 import { Game } from "./Game.tsx";
 import React from "react";
-import { App as ECSApp } from "../ecs.ts";
-import { Entity } from "../../common/types.ts";
-
-const trackedProps = ["x", "y", "owner"] as const;
+import { App as ECSApp } from "../ecs/index.ts";
+import { initApp } from "../ecs/init/index.ts";
+import { newEntity } from "../ecs/newEntity.ts";
 
 export const App = () => (
-  <ECSApp
-    newEntity={(e, app) => {
-      for (const prop of trackedProps) app.trackProp(e, prop);
-      return e as Entity;
-    }}
-  >
+  <ECSApp newEntity={newEntity} initApp={initApp}>
     <Game />
   </ECSApp>
 );

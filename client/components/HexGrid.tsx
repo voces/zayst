@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
-import { neutral, useEntities } from "../ecs.ts";
+import { neutral, useEntities } from "../ecs/index.ts";
 import "@react-three/fiber";
 
 export const HexGrid = () => {
   const { entities } = useEntities(
-    { props: ["cell", "x", "y", "owner"] },
+    { props: ["cell", "position", "owner", "color"] },
     true,
   );
   const mesh = useRef<InstancedMesh>(null!);
@@ -18,21 +18,15 @@ export const HexGrid = () => {
     let i = 0;
     for (const cell of entities) {
       dummy.setPosition(
-        (cell.x + ((cell.y & 1) === 1 ? 0.5 : 0)) *
+        (cell.position.x + ((cell.position.y & 1) === 1 ? 0.5 : 0)) *
           Math.SQRT2,
-        cell.y * (Math.SQRT1_2 + 0.5),
+        cell.position.y * (Math.SQRT1_2 + 0.5),
         1,
       );
       mesh.current.setMatrixAt(i, dummy);
       mesh.current.setColorAt(
         i,
-        new Color(
-          ...(cell.owner !== neutral ? [cell.owner.color] : [
-            Math.random() * 0.5 + 0.5,
-            Math.random() * 0.5 + 0.5,
-            Math.random() * 0.5 + 0.5,
-          ]),
-        ),
+        new Color(cell.owner !== neutral ? cell.owner.color : cell.color),
       );
       i++;
     }
