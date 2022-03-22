@@ -5,6 +5,7 @@
     "react-dom": "https://esm.sh/react-dom@17.0.2?pin=70?path=",
     "@react-three/fiber": "https://esm.sh/@react-three/fiber@7.0.26?pin=70",
     "three": "https://esm.sh/three@0.138.3?pin=70",
-    "ecs-proxy-react": "https://deno.land/x/ecs_proxy@0.4.5/src/react.tsx?deps=react@17.0.2"
+    "ecs-proxy": "https://deno.land/x/ecs_proxy@0.5.1/src/index.ts",
+    "ecs-proxy-react": "https://deno.land/x/ecs_proxy@0.5.1/src/react.tsx?deps=react@17.0.2"
   }
 }

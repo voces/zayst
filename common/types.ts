@@ -4,8 +4,8 @@ export type Player = {
 
 export type Entity = {
   // cell
-  /** Flag indicating the entity is a cell. */
-  readonly cell?: true;
+  readonly isCell?: true;
+  isHarvester?: true;
   /** 2-D position of the entity. */
   position?: {
     x: number;
@@ -15,11 +15,12 @@ export type Entity = {
   color?: number;
   /** Owner of the tile. */
   owner?: Player;
+  ownerships?: Map<Player, number>;
   progressRemaining?: number;
 };
 
-export type Cell = Entity & {
-  cell: true;
-  x: number;
-  y: number;
-};
+export type Cell =
+  & Entity
+  & Required<
+    Pick<Entity, "isCell" | "position" | "color" | "owner" | "ownerships">
+  >;

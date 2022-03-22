@@ -9,4 +9,8 @@ export type AppType = Parameters<
   React.ComponentProps<typeof App>["newEntity"]
 >[1];
 
+export type System = Parameters<AppType["addSystem"]>[0];
+
 export const neutral: Player = { color: "random" };
+
+export const localPlayer: Player = { color: "red" };

@@ -1,7 +1,14 @@
 import { Entity } from "../../common/types.ts";
 import type { App } from "./index.ts";
 
-const trackedProps = ["position", "owner", "color"] as const;
+const trackedProps = [
+  "color",
+  "owner",
+  "position",
+  "progressRemaining",
+  "ownerships",
+] as const;
+
 export const newEntity: React.ComponentProps<typeof App>["newEntity"] = (
   entity,
   app,
