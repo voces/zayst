@@ -1,7 +1,7 @@
 import { Cell } from "../../../common/types.ts";
 import { AppType, neutral } from "../index.ts";
 
-const colorfulness = 0;
+const colorfulness = 40;
 const randomColor = () => {
   const r = Math.floor(Math.random() * colorfulness) + (255 - colorfulness);
   const g = Math.floor(Math.random() * colorfulness) + (255 - colorfulness);

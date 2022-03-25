@@ -23,7 +23,7 @@ export const newBuildSystem = (app: AppType) => ({
             const newOwnerships = new Map(cell.ownerships);
             newOwnerships.set(
               entity.owner,
-              (newOwnerships.get(entity.owner) ?? 0) + ((2 / 5) / radius),
+              (newOwnerships.get(entity.owner) ?? 0) + ((1 / 12) / radius),
             );
             cell.ownerships = newOwnerships;
           }

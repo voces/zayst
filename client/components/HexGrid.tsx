@@ -2,12 +2,12 @@ import React, { useEffect, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
 import { localPlayer, neutral, useEntities } from "../ecs/index.ts";
 import "@react-three/fiber";
-import { Entity, Player } from "../../common/types.ts";
+import { Cell, Player } from "../../common/types.ts";
 
-class EntityIndexMap extends WeakMap<Entity, number> {
-  #reverse: Record<number, WeakRef<Entity> | undefined> = {};
+class CellIndexMap extends WeakMap<Cell, number> {
+  #reverse: Record<number, WeakRef<Cell> | undefined> = {};
 
-  set(entity: Entity, index: number) {
+  set(entity: Cell, index: number) {
     this.#reverse[index] = new WeakRef(entity);
     return super.set(entity, index);
   }
@@ -18,7 +18,7 @@ class EntityIndexMap extends WeakMap<Entity, number> {
 }
 
 export const HexGrid = () => {
-  const entityIndexMap = useRef(new EntityIndexMap()).current;
+  const cellIndexMap = useRef(new CellIndexMap()).current;
   const index = useRef(0);
   const lastVersion = useRef(-1);
   const { version, entities, addedEntities, modifiedEntities } = useEntities(
@@ -27,9 +27,9 @@ export const HexGrid = () => {
   );
   const mesh = useRef<InstancedMesh>(null!);
 
-  const getOrIndex = (entity: Entity) => {
-    if (entityIndexMap.has(entity)) return entityIndexMap.get(entity)!;
-    entityIndexMap.set(entity, index.current);
+  const getOrIndex = (cell: Cell) => {
+    if (cellIndexMap.has(cell)) return cellIndexMap.get(cell)!;
+    cellIndexMap.set(cell, index.current);
     return index.current++;
   };
 
@@ -90,11 +90,44 @@ export const HexGrid = () => {
       ref={mesh}
       args={[undefined, undefined, entities.size]}
       onClick={(e) => {
-        const entity = entityIndexMap.getReverse(e.instanceId!);
+        const entity = cellIndexMap.getReverse(e.instanceId!);
         if (!entity || entity.owner !== neutral) return;
         entity.owner = localPlayer;
         entity.progressRemaining = 5;
         entity.isHarvester = true;
+      }}
+      onPointerOver={(e) => {
+        mesh.current.setColorAt(e.instanceId!, new Color("blue"));
+        mesh.current.instanceColor!.needsUpdate = true;
+      }}
+      onPointerOut={(e) => {
+        const cell = cellIndexMap.getReverse(e.instanceId!)!;
+
+        const color = new Color(
+          cell.owner !== neutral ? cell.owner.color : cell.color,
+        );
+        if (cell.owner === neutral && cell.ownerships) {
+          const primaryOwners = Array.from(cell.ownerships).reduce((
+            primaryOwners,
+            owner,
+          ) => {
+            if (!primaryOwners.length) return [owner];
+            if (primaryOwners[0][1] > owner[1]) return primaryOwners;
+            if (primaryOwners[0][1] === owner[1]) {
+              return [...primaryOwners, owner];
+            }
+            return [owner];
+          }, [] as [Player, number][]);
+
+          if (primaryOwners.length === 1) {
+            color.lerp(
+              new Color(primaryOwners[0][0].color),
+              Math.min(primaryOwners[0][1], 1),
+            );
+          }
+        }
+        mesh.current.setColorAt(e.instanceId!, color);
+        mesh.current.instanceColor!.needsUpdate = true;
       }}
     >
       <circleBufferGeometry
@@ -102,7 +135,7 @@ export const HexGrid = () => {
         // TODO: find exact value for 0.82
         args={[0.82, 6, Math.PI / 6]}
       />
-      <meshPhongMaterial />
+      <meshBasicMaterial />
     </instancedMesh>
   );
 };

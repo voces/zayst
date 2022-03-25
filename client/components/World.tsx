@@ -10,7 +10,6 @@ export const World = () => {
       <Canvas orthographic camera={{ zoom: 10 }}>
         <AppContext.Provider value={app}>
           <color attach="background" args={["black"]} />
-          <ambientLight />
           <HexGrid />
         </AppContext.Provider>
       </Canvas>
