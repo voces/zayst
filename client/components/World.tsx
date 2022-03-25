@@ -7,7 +7,7 @@ export const World = () => {
   const app = useApp();
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
-      <Canvas orthographic camera={{ zoom: 10 }}>
+      <Canvas orthographic camera={{ zoom: 20 }}>
         <AppContext.Provider value={app}>
           <color attach="background" args={["black"]} />
           <HexGrid />

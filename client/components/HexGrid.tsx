@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Color, InstancedMesh, Matrix4 } from "three";
+import React, { useEffect, useMemo, useRef } from "react";
+import { Color, InstancedMesh, Matrix4, TextureLoader } from "three";
 import { localPlayer, neutral, useEntities } from "../ecs/index.ts";
 import "@react-three/fiber";
 import { Cell, Player } from "../../common/types.ts";
@@ -84,6 +84,16 @@ export const HexGrid = () => {
     mesh.current.instanceMatrix.needsUpdate = true;
   }, [mesh.current, version, addedEntities, modifiedEntities]);
 
+  const parts = 3;
+  const vertices = useMemo(
+    () =>
+      Float32Array.from(
+        Array(entities.size),
+        () => Math.floor(Math.random() ** 50 * Math.random() * 3),
+      ),
+    [entities.size],
+  );
+
   return (
     <instancedMesh
       key={entities.size}
@@ -134,8 +144,40 @@ export const HexGrid = () => {
         attach="geometry"
         // TODO: find exact value for 0.82
         args={[0.82, 6, Math.PI / 6]}
+      >
+        <instancedBufferAttribute
+          attachObject={["attributes", "texIdx"]}
+          array={vertices}
+          count={vertices.length}
+          itemSize={1}
+        />
+      </circleBufferGeometry>
+      <meshBasicMaterial
+        defines={{ USE_UV: "" }}
+        onBeforeCompile={(shader) => {
+          const texAtlas = new TextureLoader().load(
+            "data:image/png;base64,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",
+          );
+          shader.uniforms.texAtlas = { value: texAtlas };
+          shader.vertexShader = `attribute float texIdx;
+varying float vTexIdx;
+${shader.vertexShader}`.replace(
+            `void main() {`,
+            `void main() {
+    vTexIdx = texIdx;`,
+          );
+          shader.fragmentShader = `
+uniform sampler2D texAtlas;
+varying float vTexIdx;
+${shader.fragmentShader}`.replace(
+            `#include <map_fragment>`,
+            `#include <map_fragment>
+    diffuseColor *= texture(texAtlas, vec2(${
+              1 / parts
+            }, 1) * vUv + vec2(vTexIdx * ${1 / parts}, 0));`,
+          );
+        }}
       />
-      <meshBasicMaterial />
     </instancedMesh>
   );
 };
