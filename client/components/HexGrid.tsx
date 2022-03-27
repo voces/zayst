@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { Color, InstancedMesh, Matrix4, Shader, TextureLoader } from "three";
-import { localPlayer, neutral, useEntities } from "../ecs/index.ts";
+import {
+  Color,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Shader,
+  TextureLoader,
+} from "three";
+import { localPlayer, neutral, useEntities, useSystem } from "../ecs/index.ts";
 import "@react-three/fiber";
 import { Cell, Player } from "../../common/types.ts";
 
@@ -45,6 +52,35 @@ ${shader.fragmentShader}`.replace(
   );
 };
 
+const color = new Color();
+const getColor = (cell: Cell) => {
+  color.set(cell.owner !== neutral ? cell.owner.color : cell.color);
+  if (cell.owner === neutral && cell.ownerships) {
+    const primaryOwners = Array.from(cell.ownerships).reduce((
+      primaryOwners,
+      owner,
+    ) => {
+      if (!primaryOwners.length) return [owner];
+      if (primaryOwners[0][1] > owner[1]) return primaryOwners;
+      if (primaryOwners[0][1] === owner[1]) {
+        return [...primaryOwners, owner];
+      }
+      return [owner];
+    }, [] as [Player, number][]);
+
+    if (primaryOwners.length === 1) {
+      color.lerp(
+        new Color(primaryOwners[0][0].color),
+        Math.min(primaryOwners[0][1], 1),
+      );
+    }
+  }
+
+  return color;
+};
+
+const getTextureIndex = (entity: Cell): number => entity.isHarvester ? 1 : 0;
+
 export const HexGrid = () => {
   const cellIndexMap = useRef(new CellIndexMap()).current;
   const index = useRef(0);
@@ -62,11 +98,28 @@ export const HexGrid = () => {
   };
 
   useEffect(() => {
+    if (!mesh.current || mesh.current.geometry.hasAttribute("texIdx")) return;
+
+    console.log("create texIdx");
+
+    mesh.current.geometry.setAttribute(
+      "texIdx",
+      new InstancedBufferAttribute(
+        Float32Array.from(
+          Array.from(entities.values()),
+          (e) => getTextureIndex(e),
+        ),
+        1,
+      ),
+    );
+    mesh.current.geometry.getAttribute("texIdx").needsUpdate = true;
+  }, [mesh.current, entities]);
+
+  useEffect(() => {
     if (!mesh.current || version === lastVersion.current) return;
     lastVersion.current = version;
 
     const dummy = new Matrix4();
-    const color = new Color();
 
     for (const set of [addedEntities, modifiedEntities]) {
       for (const cell of set) {
@@ -79,30 +132,10 @@ export const HexGrid = () => {
           1,
         );
         mesh.current.setMatrixAt(i, dummy);
-
-        color.set(cell.owner !== neutral ? cell.owner.color : cell.color);
-        if (cell.owner === neutral && cell.ownerships) {
-          const primaryOwners = Array.from(cell.ownerships).reduce((
-            primaryOwners,
-            owner,
-          ) => {
-            if (!primaryOwners.length) return [owner];
-            if (primaryOwners[0][1] > owner[1]) return primaryOwners;
-            if (primaryOwners[0][1] === owner[1]) {
-              return [...primaryOwners, owner];
-            }
-            return [owner];
-          }, [] as [Player, number][]);
-
-          if (primaryOwners.length === 1) {
-            color.lerp(
-              new Color(primaryOwners[0][0].color),
-              Math.min(primaryOwners[0][1], 1),
-            );
-          }
-        }
-
-        mesh.current.setColorAt(i, color);
+        mesh.current.setColorAt(i, getColor(cell));
+        (mesh.current.geometry.getAttribute("texIdx").array as Uint8Array)[
+          i
+        ] = getTextureIndex(cell);
       }
     }
 
@@ -110,16 +143,12 @@ export const HexGrid = () => {
       mesh.current.instanceColor.needsUpdate = true;
     }
     mesh.current.instanceMatrix.needsUpdate = true;
+    if (mesh.current.geometry.getAttribute("texIdx")) {
+      mesh.current.geometry.getAttribute("texIdx").needsUpdate = true;
+    }
   }, [mesh.current, version, addedEntities, modifiedEntities]);
 
-  const vertices = useMemo(
-    () =>
-      Float32Array.from(
-        Array(entities.size),
-        () => Math.floor(Math.random() ** 50 * Math.random() * 3),
-      ),
-    [entities.size],
-  );
+  if (!entities.size) return null;
 
   return (
     <instancedMesh
@@ -129,41 +158,19 @@ export const HexGrid = () => {
       onClick={(e) => {
         const entity = cellIndexMap.getReverse(e.instanceId!);
         if (!entity || entity.owner !== neutral) return;
+        entity.isHarvester = true;
         entity.owner = localPlayer;
         entity.progressRemaining = 5;
-        entity.isHarvester = true;
       }}
       onPointerOver={(e) => {
+        const cell = cellIndexMap.getReverse(e.instanceId!)!;
+        if (cell.owner !== neutral) return;
         mesh.current.setColorAt(e.instanceId!, new Color("blue"));
         mesh.current.instanceColor!.needsUpdate = true;
       }}
       onPointerOut={(e) => {
         const cell = cellIndexMap.getReverse(e.instanceId!)!;
-
-        const color = new Color(
-          cell.owner !== neutral ? cell.owner.color : cell.color,
-        );
-        if (cell.owner === neutral && cell.ownerships) {
-          const primaryOwners = Array.from(cell.ownerships).reduce((
-            primaryOwners,
-            owner,
-          ) => {
-            if (!primaryOwners.length) return [owner];
-            if (primaryOwners[0][1] > owner[1]) return primaryOwners;
-            if (primaryOwners[0][1] === owner[1]) {
-              return [...primaryOwners, owner];
-            }
-            return [owner];
-          }, [] as [Player, number][]);
-
-          if (primaryOwners.length === 1) {
-            color.lerp(
-              new Color(primaryOwners[0][0].color),
-              Math.min(primaryOwners[0][1], 1),
-            );
-          }
-        }
-        mesh.current.setColorAt(e.instanceId!, color);
+        mesh.current.setColorAt(e.instanceId!, getColor(cell));
         mesh.current.instanceColor!.needsUpdate = true;
       }}
     >
@@ -172,12 +179,14 @@ export const HexGrid = () => {
         // TODO: find exact value for 0.82
         args={[0.82, 6, Math.PI / 6]}
       >
-        <instancedBufferAttribute
+        {
+          /* <instancedBufferAttribute
           attachObject={["attributes", "texIdx"]}
-          array={vertices}
-          count={vertices.length}
+          array={textureIndexes}
+          count={textureIndexes.length}
           itemSize={1}
-        />
+        /> */
+        }
       </circleBufferGeometry>
       <meshBasicMaterial
         defines={uvDefine}
