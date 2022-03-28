@@ -1,13 +1,15 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { forwardRef, useEffect, useMemo, useRef } from "react";
 import {
+  BufferGeometry,
   Color,
   InstancedBufferAttribute,
   InstancedMesh,
+  Material,
   Matrix4,
   Shader,
   TextureLoader,
 } from "three";
-import { localPlayer, neutral, useEntities, useSystem } from "../ecs/index.ts";
+import { localPlayer, neutral, useEntities } from "../ecs/index.ts";
 import "@react-three/fiber";
 import { Cell, Player } from "../../common/types.ts";
 
@@ -81,6 +83,56 @@ const getColor = (cell: Cell) => {
 
 const getTextureIndex = (entity: Cell): number => entity.isHarvester ? 1 : 0;
 
+const HexGridMesh = (
+  { entities, mesh, onClick, onPointerOver, onPointerOut }: {
+    entities: ReadonlySet<Cell>;
+    mesh: React.MutableRefObject<
+      InstancedMesh<BufferGeometry, Material | Material[]>
+    >;
+    onClick: (id: number) => void;
+    onPointerOver: (id: number) => void;
+    onPointerOut: (id: number) => void;
+  },
+) => {
+  useEffect(() => {
+    if (!mesh.current || mesh.current.geometry.hasAttribute("texIdx")) return;
+
+    mesh.current.geometry.setAttribute(
+      "texIdx",
+      new InstancedBufferAttribute(
+        Float32Array.from(
+          Array.from(entities.values()),
+          (e) => getTextureIndex(e),
+        ),
+        1,
+      ),
+    );
+    mesh.current.geometry.getAttribute("texIdx").needsUpdate = true;
+  }, [mesh.current, entities]);
+
+  return (
+    <instancedMesh
+      key={entities.size}
+      ref={mesh}
+      args={[undefined, undefined, entities.size]}
+      onClick={(e) => onClick(e.instanceId!)}
+      onPointerOver={(e) => onPointerOver(e.instanceId!)}
+      onPointerOut={(e) => onPointerOut(e.instanceId!)}
+    >
+      <circleBufferGeometry
+        attach="geometry"
+        // TODO: find exact value for 0.82
+        args={[0.82, 6, Math.PI / 6]}
+      >
+      </circleBufferGeometry>
+      <meshBasicMaterial
+        defines={uvDefine}
+        onBeforeCompile={indexedMesh}
+      />
+    </instancedMesh>
+  );
+};
+
 export const HexGrid = () => {
   const cellIndexMap = useRef(new CellIndexMap()).current;
   const index = useRef(0);
@@ -96,24 +148,6 @@ export const HexGrid = () => {
     cellIndexMap.set(cell, index.current);
     return index.current++;
   };
-
-  useEffect(() => {
-    if (!mesh.current || mesh.current.geometry.hasAttribute("texIdx")) return;
-
-    console.log("create texIdx");
-
-    mesh.current.geometry.setAttribute(
-      "texIdx",
-      new InstancedBufferAttribute(
-        Float32Array.from(
-          Array.from(entities.values()),
-          (e) => getTextureIndex(e),
-        ),
-        1,
-      ),
-    );
-    mesh.current.geometry.getAttribute("texIdx").needsUpdate = true;
-  }, [mesh.current, entities]);
 
   useEffect(() => {
     if (!mesh.current || version === lastVersion.current) return;
@@ -151,47 +185,27 @@ export const HexGrid = () => {
   if (!entities.size) return null;
 
   return (
-    <instancedMesh
-      key={entities.size}
-      ref={mesh}
-      args={[undefined, undefined, entities.size]}
-      onClick={(e) => {
-        const entity = cellIndexMap.getReverse(e.instanceId!);
+    <HexGridMesh
+      entities={entities}
+      mesh={mesh}
+      onClick={(id) => {
+        const entity = cellIndexMap.getReverse(id);
         if (!entity || entity.owner !== neutral) return;
         entity.isHarvester = true;
         entity.owner = localPlayer;
         entity.progressRemaining = 5;
       }}
-      onPointerOver={(e) => {
-        const cell = cellIndexMap.getReverse(e.instanceId!)!;
+      onPointerOver={(id) => {
+        const cell = cellIndexMap.getReverse(id)!;
         if (cell.owner !== neutral) return;
-        mesh.current.setColorAt(e.instanceId!, new Color("blue"));
+        mesh.current.setColorAt(id, new Color("blue"));
         mesh.current.instanceColor!.needsUpdate = true;
       }}
-      onPointerOut={(e) => {
-        const cell = cellIndexMap.getReverse(e.instanceId!)!;
-        mesh.current.setColorAt(e.instanceId!, getColor(cell));
+      onPointerOut={(id) => {
+        const cell = cellIndexMap.getReverse(id)!;
+        mesh.current.setColorAt(id, getColor(cell));
         mesh.current.instanceColor!.needsUpdate = true;
       }}
-    >
-      <circleBufferGeometry
-        attach="geometry"
-        // TODO: find exact value for 0.82
-        args={[0.82, 6, Math.PI / 6]}
-      >
-        {
-          /* <instancedBufferAttribute
-          attachObject={["attributes", "texIdx"]}
-          array={textureIndexes}
-          count={textureIndexes.length}
-          itemSize={1}
-        /> */
-        }
-      </circleBufferGeometry>
-      <meshBasicMaterial
-        defines={uvDefine}
-        onBeforeCompile={indexedMesh}
-      />
-    </instancedMesh>
+    />
   );
 };
