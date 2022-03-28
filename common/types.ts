@@ -1,7 +1,3 @@
-export type Player = {
-  color: string;
-};
-
 export type Entity = {
   // cell
   readonly isCell?: true;
@@ -12,12 +8,21 @@ export type Entity = {
     y: number;
   };
   /** Color for non-owned tiles. */
-  color?: number;
+  color?: number | string;
   /** Owner of the tile. */
   owner?: Player;
   ownerships?: Map<Player, number>;
   progressRemaining?: number;
+
+  // player
+  readonly isPlayer?: true;
+  local?: boolean;
+  // color?: number | string;
 };
+
+export type Player =
+  & Entity
+  & Required<Pick<Entity, "isPlayer" | "color">>;
 
 export type Cell =
   & Entity

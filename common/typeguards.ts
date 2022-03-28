@@ -1,3 +1,5 @@
+import { Entity, Player } from "./types.ts";
+
 export type GuardedType<T> = T extends (value: unknown) => value is infer U ? U
   : never;
 
@@ -156,110 +158,5 @@ export const is = {
   tuple: isTuple,
 };
 
-// export const is = Object.assign(
-//   ((
-//     // deno-lint-ignore no-explicit-any
-//     ...args: any[]
-//   ) => {
-//     if (args.length > 1) return isUnion(...args);
-//     if (Array.isArray(args[0])) return isTuple(...args[0]);
-//     if (typeof args[0] === "object") return isObject(args[0]);
-//     if (typeof args[0] !== "function") return isIn(...args); // in covers const, too
-//     return isArray(args[0]);
-//   }) as {
-//     // Object
-//     <T extends Record<string, unknown>>(
-//       props: { [Prop in keyof T]: (value: unknown) => value is T[Prop] },
-//     ): (value: unknown) => value is T;
-//     // Array
-//     <T>(
-//       typeguard: (value: unknown) => value is T,
-//     ): (value: unknown) => value is T;
-//     // Const + In
-//     <T extends string | boolean | number>(
-//       ...options: T[]
-//     ): (value: unknown) => value is T;
-//     // Union
-//     <A, B>(
-//       typeguardA: (value: unknown) => value is A,
-//       typeguardB: (value: unknown) => value is B,
-//     ): (value: unknown) => value is A | B;
-//     <A, B, C>(
-//       typeguardA: (value: unknown) => value is A,
-//       typeguardB: (value: unknown) => value is B,
-//       typeguardC: (value: unknown) => value is C,
-//     ): (value: unknown) => value is A | B | C;
-//     <A, B, C, D>(
-//       typeguardA: (value: unknown) => value is A,
-//       typeguardB: (value: unknown) => value is B,
-//       typeguardC: (value: unknown) => value is C,
-//       typeguardD: (value: unknown) => value is D,
-//     ): (value: unknown) => value is A | B | C | D;
-//     <A, B, C, D, E>(
-//       typeguardA: (value: unknown) => value is A,
-//       typeguardB: (value: unknown) => value is B,
-//       typeguardC: (value: unknown) => value is C,
-//       typeguardD: (value: unknown) => value is D,
-//       typeguardE: (value: unknown) => value is E,
-//     ): (value: unknown) => value is A | B | C | D | E;
-//     <A, B, C, D, E, F>(
-//       typeguardA: (value: unknown) => value is A,
-//       typeguardB: (value: unknown) => value is B,
-//       typeguardC: (value: unknown) => value is C,
-//       typeguardD: (value: unknown) => value is D,
-//       typeguardE: (value: unknown) => value is E,
-//       typeguardF: (value: unknown) => value is F,
-//     ): (value: unknown) => value is A | B | C | D | E;
-//     <T>(
-//       ...typeguards: ((value: unknown) => value is T)[]
-//     ): (value: unknown) => value is T;
-//     // Tuple
-//     <A>(
-//       typeguards: [typeguardA: (value: unknown) => value is A],
-//     ): (value: unknown) => value is [A];
-//     <A, B>(
-//       typeguards: [
-//         typeguardA: (value: unknown) => value is A,
-//         typeguardB: (value: unknown) => value is B,
-//       ],
-//     ): (value: unknown) => value is [A, B];
-//     <A, B, C>(
-//       typeguards: [
-//         typeguardA: (value: unknown) => value is A,
-//         typeguardB: (value: unknown) => value is B,
-//         typeguardC: (value: unknown) => value is C,
-//       ],
-//     ): (value: unknown) => value is [A, B, C];
-//     <A, B, C, D>(
-//       typeguards: [
-//         typeguardA: (value: unknown) => value is A,
-//         typeguardB: (value: unknown) => value is B,
-//         typeguardC: (value: unknown) => value is C,
-//         typeguardD: (value: unknown) => value is D,
-//       ],
-//     ): (value: unknown) => value is [A, B, C, D];
-//     <A, B, C, D, E>(
-//       typeguards: [
-//         typeguardA: (value: unknown) => value is A,
-//         typeguardB: (value: unknown) => value is B,
-//         typeguardC: (value: unknown) => value is C,
-//         typeguardD: (value: unknown) => value is D,
-//         typeguardE: (value: unknown) => value is E,
-//       ],
-//     ): (value: unknown) => value is [A, B, C, D, E];
-//     <A, B, C, D, E, F>(
-//       typeguards: [
-//         typeguardA: (value: unknown) => value is A,
-//         typeguardB: (value: unknown) => value is B,
-//         typeguardC: (value: unknown) => value is C,
-//         typeguardD: (value: unknown) => value is D,
-//         typeguardE: (value: unknown) => value is E,
-//         typeguardF: (value: unknown) => value is F,
-//       ],
-//     ): (value: unknown) => value is [A, B, C, D, E];
-//     <T extends unknown[]>(
-//       typeguards: ((value: unknown) => value is T[number])[],
-//     ): (value: unknown) => value is T;
-//   },
-//   iz,
-// );
+export const isPlayer = (entity: Entity): entity is Player =>
+  entity.isPlayer === true;

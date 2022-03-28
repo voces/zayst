@@ -9,9 +9,10 @@ import {
   Shader,
   TextureLoader,
 } from "three";
-import { localPlayer, neutral, useEntities } from "../ecs/index.ts";
+import { useEntities } from "../ecs/index.ts";
 import "@react-three/fiber";
 import { Cell, Player } from "../../common/types.ts";
+import { getLocalPlayer, getNeutralPlayer } from "../ecs/init/initPlayers.ts";
 
 class CellIndexMap extends WeakMap<Cell, number> {
   #reverse: Record<number, WeakRef<Cell> | undefined> = {};
@@ -54,28 +55,46 @@ ${shader.fragmentShader}`.replace(
   );
 };
 
+const getPrimaryOwner = (cell: Cell) => {
+  if (cell.owner !== getNeutralPlayer() || !cell.ownerships) return;
+
+  const primaryOwners = Array.from(cell.ownerships).reduce((
+    primaryOwners,
+    owner,
+  ) => {
+    if (!primaryOwners.length) return [owner];
+    if (primaryOwners[0][1] > owner[1]) return primaryOwners;
+    if (primaryOwners[0][1] === owner[1]) {
+      return [...primaryOwners, owner];
+    }
+    return [owner];
+  }, [] as [Player, number][]);
+
+  if (primaryOwners.length === 1) {
+    color.lerp(
+      new Color(primaryOwners[0][0].color),
+      Math.min(primaryOwners[0][1], 1),
+    );
+  }
+
+  if (primaryOwners.length === 1) {
+    return {
+      owner: primaryOwners[0][0],
+      share: primaryOwners[0][1],
+    };
+  }
+};
+
 const color = new Color();
 const getColor = (cell: Cell) => {
-  color.set(cell.owner !== neutral ? cell.owner.color : cell.color);
-  if (cell.owner === neutral && cell.ownerships) {
-    const primaryOwners = Array.from(cell.ownerships).reduce((
-      primaryOwners,
-      owner,
-    ) => {
-      if (!primaryOwners.length) return [owner];
-      if (primaryOwners[0][1] > owner[1]) return primaryOwners;
-      if (primaryOwners[0][1] === owner[1]) {
-        return [...primaryOwners, owner];
-      }
-      return [owner];
-    }, [] as [Player, number][]);
+  color.set(cell.owner !== getNeutralPlayer() ? cell.owner.color : cell.color);
 
-    if (primaryOwners.length === 1) {
-      color.lerp(
-        new Color(primaryOwners[0][0].color),
-        Math.min(primaryOwners[0][1], 1),
-      );
-    }
+  const primaryOwner = getPrimaryOwner(cell);
+  if (primaryOwner) {
+    color.lerp(
+      new Color(primaryOwner.owner.color),
+      Math.min(primaryOwner.share, 1),
+    );
   }
 
   return color;
@@ -138,7 +157,20 @@ export const HexGrid = () => {
   const index = useRef(0);
   const lastVersion = useRef(-1);
   const { version, entities, addedEntities, modifiedEntities } = useEntities(
-    { props: ["isCell", "position", "owner", "color", "ownerships"] },
+    {
+      props: ["isCell", "position", "owner", "color", "ownerships"],
+      update(delta) {
+        const incomes = new Map<Player, number>();
+        for (const cell of this.entities!) {
+          const primaryOwner = getPrimaryOwner(cell);
+          if (!primaryOwner) continue;
+          incomes.set(
+            primaryOwner.owner,
+            (incomes.get(primaryOwner.owner) ?? 0) + primaryOwner.share * delta,
+          );
+        }
+      },
+    },
     true,
   );
   const mesh = useRef<InstancedMesh>(null!);
@@ -189,15 +221,23 @@ export const HexGrid = () => {
       entities={entities}
       mesh={mesh}
       onClick={(id) => {
-        const entity = cellIndexMap.getReverse(id);
-        if (!entity || entity.owner !== neutral) return;
-        entity.isHarvester = true;
-        entity.owner = localPlayer;
-        entity.progressRemaining = 5;
+        const cell = cellIndexMap.getReverse(id);
+        if (!cell || cell.owner !== getNeutralPlayer()) return;
+
+        const primaryOwner = getPrimaryOwner(cell);
+        if (primaryOwner?.owner !== getLocalPlayer()) return;
+
+        cell.isHarvester = true;
+        cell.owner = getLocalPlayer();
+        cell.progressRemaining = 5;
       }}
       onPointerOver={(id) => {
         const cell = cellIndexMap.getReverse(id)!;
-        if (cell.owner !== neutral) return;
+        if (cell.owner !== getNeutralPlayer()) return;
+
+        const primaryOwner = getPrimaryOwner(cell);
+        if (primaryOwner?.owner !== getLocalPlayer()) return;
+
         mesh.current.setColorAt(id, new Color("blue"));
         mesh.current.instanceColor!.needsUpdate = true;
       }}
