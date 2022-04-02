@@ -22,10 +22,14 @@ export const initPlayers = (app: AppType) => {
   localPlayer = app.add({
     isPlayer: true,
     color: "red",
+    wealth: 0,
+    income: 0,
   });
 
   neutralPlayer = app.add({
     isPlayer: true,
     color: "random",
+    wealth: 0,
+    income: 0,
   });
 };

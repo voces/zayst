@@ -169,6 +169,12 @@ export const HexGrid = () => {
             (incomes.get(primaryOwner.owner) ?? 0) + primaryOwner.share * delta,
           );
         }
+
+        for (const [player, income] of incomes) {
+          player.wealth += income;
+          player.income = income / delta;
+          console.log(player);
+        }
       },
     },
     true,

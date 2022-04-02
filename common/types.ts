@@ -18,11 +18,13 @@ export type Entity = {
   readonly isPlayer?: true;
   local?: boolean;
   // color?: number | string;
+  wealth?: number;
+  income?: number;
 };
 
 export type Player =
   & Entity
-  & Required<Pick<Entity, "isPlayer" | "color">>;
+  & Required<Pick<Entity, "isPlayer" | "color" | "wealth" | "income">>;
 
 export type Cell =
   & Entity
