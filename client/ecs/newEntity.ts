@@ -7,6 +7,8 @@ const trackedProps = [
   "position",
   "progressRemaining",
   "ownerships",
+  "wealth",
+  "income",
 ] as const;
 
 export const newEntity: React.ComponentProps<typeof App>["newEntity"] = (

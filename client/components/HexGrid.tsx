@@ -1,9 +1,11 @@
 import React, { forwardRef, useEffect, useMemo, useRef } from "react";
 import {
+  BufferAttribute,
   BufferGeometry,
   Color,
   InstancedBufferAttribute,
   InstancedMesh,
+  InterleavedBufferAttribute,
   Material,
   Matrix4,
   Shader,
@@ -11,8 +13,9 @@ import {
 } from "three";
 import { useEntities } from "../ecs/index.ts";
 import "@react-three/fiber";
-import { Cell, Player } from "../../common/types.ts";
+import { Cell, Entity, Player } from "../../common/types.ts";
 import { getLocalPlayer, getNeutralPlayer } from "../ecs/init/initPlayers.ts";
+import { stats } from "../../common/structures.ts";
 
 class CellIndexMap extends WeakMap<Cell, number> {
   #reverse: Record<number, WeakRef<Cell> | undefined> = {};
@@ -27,7 +30,7 @@ class CellIndexMap extends WeakMap<Cell, number> {
   }
 }
 
-const spriteCount = 2;
+const spriteCount = 3;
 const spriteSheet = new TextureLoader().load("./assets/spritesheet.svg");
 const uvDefine = { USE_UV: "" };
 const indexedMesh = (shader: Shader) => {
@@ -93,14 +96,28 @@ const getColor = (cell: Cell) => {
   if (primaryOwner) {
     color.lerp(
       new Color(primaryOwner.owner.color),
-      Math.min(primaryOwner.share, 1),
+      Math.min(primaryOwner.share, 1) ** 0.5,
     );
   }
 
   return color;
 };
 
-const getTextureIndex = (entity: Cell): number => entity.isHarvester ? 1 : 0;
+const getTextureIndex = (entity: Cell): number =>
+  entity.isHarvester ? 1 : entity.isArrow ? 2 : 0;
+const isBufferAttribute = (
+  value: InterleavedBufferAttribute | BufferAttribute,
+): value is BufferAttribute => "isBufferAttribute" in value;
+const setTexIdx = (mesh: InstancedMesh, index: number, value: number) => {
+  const attr = mesh.geometry.getAttribute("texIdx");
+  if (isBufferAttribute(attr)) attr.set([value], index);
+};
+const structureFlagMap: {
+  [K in NonNullable<Entity["structureType"]>]: `is${Capitalize<K>}`;
+} = {
+  harvester: "isHarvester",
+  arrow: "isArrow",
+};
 
 const HexGridMesh = (
   { entities, mesh, onClick, onPointerOver, onPointerOut }: {
@@ -152,7 +169,7 @@ const HexGridMesh = (
   );
 };
 
-export const HexGrid = () => {
+export const HexGrid = React.memo(() => {
   const cellIndexMap = useRef(new CellIndexMap()).current;
   const index = useRef(0);
   const lastVersion = useRef(-1);
@@ -173,7 +190,6 @@ export const HexGrid = () => {
         for (const [player, income] of incomes) {
           player.wealth += income;
           player.income = income / delta;
-          console.log(player);
         }
       },
     },
@@ -231,27 +247,45 @@ export const HexGrid = () => {
         if (!cell || cell.owner !== getNeutralPlayer()) return;
 
         const primaryOwner = getPrimaryOwner(cell);
-        if (primaryOwner?.owner !== getLocalPlayer()) return;
+        const localPlayer = getLocalPlayer();
+        if (primaryOwner?.owner !== localPlayer) return;
 
-        cell.isHarvester = true;
-        cell.owner = getLocalPlayer();
-        cell.progressRemaining = 5;
+        const spec = stats[localPlayer.structureType!];
+        const cost = spec.cost;
+        if (cost > localPlayer.wealth) return;
+
+        cell[structureFlagMap[localPlayer.structureType!]] = true;
+        cell.owner = localPlayer;
+        cell.progressRemaining = spec.buildTime;
+        localPlayer.wealth -= spec.cost;
       }}
       onPointerOver={(id) => {
         const cell = cellIndexMap.getReverse(id)!;
         if (cell.owner !== getNeutralPlayer()) return;
 
+        const localPlayer = getLocalPlayer();
         const primaryOwner = getPrimaryOwner(cell);
-        if (primaryOwner?.owner !== getLocalPlayer()) return;
+        if (primaryOwner?.owner !== localPlayer) return;
 
         mesh.current.setColorAt(id, new Color("blue"));
         mesh.current.instanceColor!.needsUpdate = true;
+        setTexIdx(
+          mesh.current,
+          id,
+          getTextureIndex({
+            ...cell,
+            [structureFlagMap[localPlayer.structureType!]]: true,
+          }),
+        );
+        mesh.current.geometry.getAttribute("texIdx").needsUpdate = true;
       }}
       onPointerOut={(id) => {
         const cell = cellIndexMap.getReverse(id)!;
         mesh.current.setColorAt(id, getColor(cell));
         mesh.current.instanceColor!.needsUpdate = true;
+        setTexIdx(mesh.current, id, getTextureIndex(cell));
+        mesh.current.geometry.getAttribute("texIdx").needsUpdate = true;
       }}
     />
   );
-};
+});

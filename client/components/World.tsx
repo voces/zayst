@@ -3,7 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { HexGrid } from "./HexGrid.tsx";
 import { AppContext, useApp } from "../ecs/index.ts";
 
-export const World = () => {
+export const World = React.memo(() => {
   const app = useApp();
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
@@ -15,4 +15,4 @@ export const World = () => {
       </Canvas>
     </div>
   );
-};
+});

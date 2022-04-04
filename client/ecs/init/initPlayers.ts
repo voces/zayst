@@ -24,6 +24,8 @@ export const initPlayers = (app: AppType) => {
     color: "red",
     wealth: 0,
     income: 0,
+    local: true,
+    structureType: "harvester",
   });
 
   neutralPlayer = app.add({

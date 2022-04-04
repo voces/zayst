@@ -3,7 +3,7 @@ import { Cell, Player } from "../../../common/types.ts";
 import { AppType } from "../index.ts";
 import { getNeutralPlayer } from "./initPlayers.ts";
 
-const colorfulness = 40;
+const colorfulness = 24;
 const randomColor = () => {
   const r = Math.floor(Math.random() * colorfulness) + (255 - colorfulness);
   const g = Math.floor(Math.random() * colorfulness) + (255 - colorfulness);
@@ -47,12 +47,12 @@ export const initCells = (app: AppType) => {
     if (player === neutralPlayer) continue;
     let cell: Cell;
     while (true) {
-      const x = Math.floor(Math.random() * (WIDTH * 2 + 1) - WIDTH);
-      const y = Math.floor(Math.random() * (HEIGHT * 2 + 1) - HEIGHT);
+      const x = Math.floor(Math.random() * ((WIDTH * 2 + 1) - WIDTH) - 16) + 8;
+      const y = Math.floor(Math.random() * ((HEIGHT * 2 + 1) - HEIGHT) - 16) +
+        8;
       cell = grid[y][x];
       if (cell.owner === neutralPlayer) break;
     }
-    console.log(cell.position);
     cell.owner = player;
     cell.isHarvester = true;
     cell.progressRemaining = 0.001;

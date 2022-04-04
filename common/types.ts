@@ -1,7 +1,11 @@
+import { StructureType } from "./structures.ts";
+
+// Make sure to update client/ecs/newEntity.ts for updated props
 export type Entity = {
   // cell
   readonly isCell?: true;
   isHarvester?: true;
+  isArrow?: true;
   /** 2-D position of the entity. */
   position?: {
     x: number;
@@ -16,10 +20,12 @@ export type Entity = {
 
   // player
   readonly isPlayer?: true;
-  local?: boolean;
   // color?: number | string;
   wealth?: number;
   income?: number;
+  // Local player info
+  local?: boolean;
+  structureType?: StructureType;
 };
 
 export type Player =

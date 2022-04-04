@@ -1,8 +1,9 @@
 import { World } from "./World.tsx";
 import React, { useEffect } from "react";
 import { useApp } from "../ecs/index.ts";
+import { HUD } from "./HUD.tsx";
 
-export const Game = () => {
+export const Game = React.memo(() => {
   const app = useApp();
 
   useEffect(() => {
@@ -10,5 +11,10 @@ export const Game = () => {
     return () => clearInterval(interval);
   });
 
-  return <World />;
-};
+  return (
+    <>
+      <World />
+      <HUD />
+    </>
+  );
+});
