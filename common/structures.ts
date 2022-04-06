@@ -12,7 +12,7 @@ export type Spec = {
 export const stats = {
   harvester: {
     name: "Harvester",
-    cost: 20,
+    cost: 240,
     economy: 4,
     health: 10,
     buildTime: 5,

@@ -22,7 +22,7 @@ export const initPlayers = (app: AppType) => {
   localPlayer = app.add({
     isPlayer: true,
     color: "red",
-    wealth: 0,
+    wealth: 10_000,
     income: 0,
     local: true,
     structureType: "harvester",
@@ -31,7 +31,7 @@ export const initPlayers = (app: AppType) => {
   neutralPlayer = app.add({
     isPlayer: true,
     color: "random",
-    wealth: 0,
+    wealth: 10_000,
     income: 0,
   });
 };
